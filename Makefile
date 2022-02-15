@@ -1,5 +1,6 @@
 PYTHONLIB = /usr/lib/python3.8
 BINHOME = /usr/local/bin
+
 TARGET = whois.py
 
 install: $(TARGET)

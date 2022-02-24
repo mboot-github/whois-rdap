@@ -250,7 +250,12 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	result = [ 404, None, None, None, None, None, None ]
 
 	while retry_count < retry_limit:
-		response, payload = whois_rdap(MkUrl(ip,ipaddr))
+		response = payload = None
+
+		try:
+			response, payload = whois_rdap(MkUrl(ip,ipaddr))
+		except Exception as err:
+			breakpoint()
 
 		result[0] = response.status_code
 

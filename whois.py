@@ -237,17 +237,40 @@ def whois_rdap(url):
 	return response, payload
 
 # Get IP Info
-def GetIPInfo(ipaddr):
+def GetIPInfo(ipaddr,retry_in=10):
 	"""Use WHOIS API to get whois info for the supplied IP Address"""
 	global ip
 
 	DbgMsg(">>> Entering GetIPInfo")
 
+	retry_count = 0
+	retry_limit = 2
+
 	result = [ 404, None, None, None, None, None, None ]
 
-	response, payload = whois_rdap(MkUrl(ip,ipaddr))
+	while retry_count < retry_limit:
+		response, payload = whois_rdap(MkUrl(ip,ipaddr))
 
-	result[0] = response.status_code
+		result[0] = response.status_code
+
+		if response.status_code == 429 and retry_count < retry_limit:
+			# Rate Limit
+			retry_rate = "Retry-After"
+
+			retry_count += 1
+
+			if retry_rate in response.headers:
+				try:
+					retry_when = int(response.headers[retry_rate])
+
+					time.sleep(retry_when)
+				except:
+					time.sleep(retry_in)
+
+		elif response.status_code == 200:
+			break
+		else:
+			break
 
 	if payload:
 		name = payload.get("name","unknown")

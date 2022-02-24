@@ -237,7 +237,7 @@ def whois_rdap(url):
 	return response, payload
 
 # Get IP Info
-def GetIPInfo(ipaddr,retry_in=10):
+def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	"""Use WHOIS API to get whois info for the supplied IP Address"""
 	global ip
 
@@ -288,6 +288,9 @@ def GetIPInfo(ipaddr,retry_in=10):
 		network,netmask,bits,cidr,count = BreakdownNetwork(startAddress,endAddress)
 
 		result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload ]
+
+	if pause > 0:
+		time.sleep(pause)
 
 	return result
 

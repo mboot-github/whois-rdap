@@ -255,6 +255,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 		try:
 			response, payload = whois_rdap(MkUrl(ip,ipaddr))
 		except Exception as err:
+			n = err
 			breakpoint()
 
 		result[0] = response.status_code

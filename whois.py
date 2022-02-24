@@ -254,9 +254,12 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 
 		try:
 			response, payload = whois_rdap(MkUrl(ip,ipaddr))
+		except requests.ConnectionError:
+			time.sleep(retry_in)			# Most likely a rate limit hit
+			retry_count += 1
+			continue
 		except Exception as err:
-			n = err
-			breakpoint()
+			break					# Major bummer
 
 		result[0] = response.status_code
 
@@ -275,8 +278,8 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 					time.sleep(retry_in)
 
 		elif response.status_code == 200:
-			break
-		else:
+			break					# Gooooood
+		else:						# Failsafe
 			break
 
 	if payload:

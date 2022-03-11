@@ -287,6 +287,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 		handle = payload.get("handle","")
 		startAddress = payload.get("startAddress",ipaddr)
 		endAddress = payload.get("endAddress",ipaddr)
+		country = payload.get("country","")
 
 		parentHandle = payload.get("parentHandle","")
 
@@ -297,7 +298,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 
 		network,netmask,bits,cidr,count = BreakdownNetwork(startAddress,endAddress)
 
-		result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload ]
+		result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload, country ]
 
 	if pause > 0:
 		time.sleep(pause)

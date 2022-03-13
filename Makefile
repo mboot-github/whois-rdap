@@ -36,6 +36,7 @@ endif
 
 clean:
 	@test -d dist && rm -fR dist
+	@test -d whois_rdap.egg-info && rm -fR whois_rdap.egg-info
 
 cheatinstall:
 	@sudo cp $(SRC) $(CHEATTARGET)/$(CODE)

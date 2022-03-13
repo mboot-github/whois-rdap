@@ -25,7 +25,8 @@ random.seed()
 #
 
 # Version
-Version = "0.2"
+VERSION=(0,0,2)
+Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Email Addess Expression
 loose_emailaddr_exp = "(?P<username>[\w_-]+)@(?P<domain>([\w\-]+\.)+([\w\-]*))"

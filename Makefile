@@ -1,4 +1,5 @@
 PACKAGE=whois-rdap
+EPACKAGE=whois_rdap
 CODE=whois.py
 SRC=src/whois/$(CODE)
 CHEATTARGET=/usr/lib/python3.8
@@ -35,8 +36,8 @@ else
 endif
 
 clean:
-	@test -d dist && rm -fR dist
-	@test -d whois_rdap.egg-info && rm -fR whois_rdap.egg-info
+	@test -d dist && rm -fR dist || true
+	@test -d $(EPACKAGE).egg-info && rm -fR $(EPACKAGE).egg-info || true
 
 cheatinstall:
 	@sudo cp $(SRC) $(CHEATTARGET)/$(CODE)

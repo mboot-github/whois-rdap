@@ -130,3 +130,5 @@ dmypy.json
 
 # Flag I place in to keep makefile from refiring the prereqs
 .prereqs
+
+verfix.py

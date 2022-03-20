@@ -28,6 +28,9 @@ random.seed()
 VERSION=(0,0,3)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
+# Parser
+__Parser__ = None
+
 # Email Addess Expression
 loose_emailaddr_exp = "(?P<username>[\w_-]+)@(?P<domain>([\w\-]+\.)+([\w\-]*))"
 
@@ -307,37 +310,45 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	return result
 
 #
-# Test Stub
+# Init and Run Pattern Handler
 #
 
-# Test Function
-def test(args):
-	""" Test stub"""
+# Build Parser
+def BuildParser():
+	"""Build Parser"""
 
-	DebugMode(True)
-	ModuleMode(False)
+	global __Parser__
 
-	Msg("I do nothing ATM")
-	pass
+	if __Parser__ == None:
+		parser = __Parser__ = argparse.ArgumentParser(description='Whois Python Module and Utility')
 
-#
-# Main Loop
-#
+		parser.add_argument("-d","--debug",action="store_true",help="Enter debug mode")
+		parser.add_argument("-t",action="store_true",help="Run test function")
+		parser.add_argument("-j",action="store_true",help="Return JSON Response")
+		parser.add_argument("-s",action="store_true",help="Show header for output")
+		parser.add_argument("ip",nargs='?',help="Search event list")
 
-if __name__ == "__main__":
-	"""Cmdline Loop"""
+# Init Module
+def Initialize():
+	"""Init Module"""
 
-	ModuleMode(False)
+	BuildParser()
 
-	parser = argparse.ArgumentParser(description='Whois Python Module and Utility')
+# Init Module
+Initialize()
 
-	parser.add_argument("-d","--debug",action="store_true",help="Enter debug mode")
-	parser.add_argument("-t",action="store_true",help="Run test function")
-	parser.add_argument("-j",action="store_true",help="Return JSON Response")
-	parser.add_argument("-s",action="store_true",help="Show header for output")
-	parser.add_argument("ip",nargs='?',help="Search event list")
+# Run/Plugin/CmdLine Pattern Handler
+def run(arguments=None):
+	"""Run Pattern Handler"""
 
-	args = parser.parse_args()
+	global __Parser__, header
+
+	args = None
+
+	if arguments != None:
+		args = __Parser__.parse_args(arguments)
+	else:
+		args = __Parser__.parse_args()
 
 	info = None
 
@@ -368,3 +379,27 @@ if __name__ == "__main__":
 			Msg("Bummer, RDAP Failed - {}".format(info[0]))
 	else:
 		Msg("No ip supplied to look up... fool")
+
+#
+# Test Stub
+#
+
+# Test Function
+def test(args):
+	""" Test stub"""
+
+	DebugMode(True)
+	ModuleMode(False)
+
+	Msg("I do nothing ATM")
+	pass
+
+#
+# Main Loop
+#
+
+if __name__ == "__main__":
+	"""Cmdline Loop"""
+	ModuleMode(False)
+
+	run()

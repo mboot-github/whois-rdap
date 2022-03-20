@@ -25,7 +25,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,2)
+VERSION=(0,0,3)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Email Addess Expression
@@ -363,7 +363,7 @@ if __name__ == "__main__":
 				if args.s:
 					Msg(",".join(header[1:-1]))
 
-				Msg(",".join(info[1:-1]))
+				Msg(",".join(info[1:-2]))
 		else:
 			Msg("Bummer, RDAP Failed - {}".format(info[0]))
 	else:

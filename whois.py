@@ -25,7 +25,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,3)
+VERSION=(0,0,4)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -251,6 +251,8 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	retry_count = 0
 	retry_limit = 2
 
+	# Format :
+	# RDAP-Exit-Code, Rec-Name, Rec-Handle, StartAddr, EndAddr, CIDR, parentHandle, abuse, payload, country
 	result = [ 404, None, None, None, None, None, None ]
 
 	while retry_count < retry_limit:
@@ -323,6 +325,7 @@ def BuildParser():
 		parser = __Parser__ = argparse.ArgumentParser(description='Whois Python Module and Utility')
 
 		parser.add_argument("-d","--debug",action="store_true",help="Enter debug mode")
+		parser.add_argument("--noshow",action="store_true",help="Return output, but don't display it")
 		parser.add_argument("-t",action="store_true",help="Run test function")
 		parser.add_argument("-j",action="store_true",help="Return JSON Response")
 		parser.add_argument("-s",action="store_true",help="Show header for output")
@@ -368,17 +371,19 @@ def run(arguments=None):
 		if info[0] == 200:
 			DbgMsg("Attempting to output")
 
-			if args.j:
+			if args.j and not args.noshow:
 				Msg(json.dumps(info[8],indent=2))
-			else:
+			elif not args.noshow:
 				if args.s:
 					Msg(",".join(header[1:-1]))
 
 				Msg(",".join(info[1:-2]))
-		else:
+		elif not args.noshow:
 			Msg("Bummer, RDAP Failed - {}".format(info[0]))
-	else:
+	elif not args.noshow:
 		Msg("No ip supplied to look up... fool")
+
+	return info
 
 #
 # Test Stub

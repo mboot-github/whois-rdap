@@ -13,6 +13,7 @@ import random
 import json
 import ipaddress
 import time
+from collections import namedtuple
 
 import py_helper as ph
 from py_helper import DebugMode, CmdLineMode, ModuleMode, Msg, DbgMsg
@@ -25,7 +26,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,4)
+VERSION=(0,0,5)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -40,7 +41,10 @@ emailaddr_exp = r"^(?P<username>[\w_-]+)@(?P<domain>([\w\-]+\.)+([\w\-]*))$"
 abuse_exp = r"(?P<username>[\w_-]*abuse[^@]*)@(?P<domain>.+)"
 
 # Cmd Line Header Strings
-header = [ "http code", "name","handle","start","end","cidr","parent","abuse" ]
+header = [ "http_result", "name","handle","start","end","cidr","parent","abuse" ]
+
+# Helpers
+WhoisResult = namedtuple("WhoisResult",['http_result','name','handle','start','end','cidr','parent','abuse','payload','country'])
 
 # Whois ReSTful Web Service
 
@@ -253,7 +257,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 
 	# Format :
 	# RDAP-Exit-Code, Rec-Name, Rec-Handle, StartAddr, EndAddr, CIDR, parentHandle, abuse, payload, country
-	result = [ 404, None, None, None, None, None, None ]
+	result = WhoisResult(404, None, None, None, None, None, None, None, None, None)
 
 	while retry_count < retry_limit:
 		response = payload = None
@@ -267,7 +271,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 		except Exception as err:
 			break					# Major bummer
 
-		result[0] = response.status_code
+		result.http_result = response.status_code
 
 		if response.status_code == 429 and retry_count < retry_limit:
 			# Rate Limit
@@ -304,7 +308,8 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 
 		network,netmask,bits,cidr,count = BreakdownNetwork(startAddress,endAddress)
 
-		result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload, country ]
+		result = WhoisResult(response.status_code,name,handle,startAddress,endAddress,cidr,parentHandle,abuse,payload,country)
+		# result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload, country ]
 
 	if pause > 0:
 		time.sleep(pause)

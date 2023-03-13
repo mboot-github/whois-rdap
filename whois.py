@@ -26,7 +26,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,5)
+VERSION=(0,0,6)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -67,6 +67,9 @@ nets = "/nets"
 pocs = "/pocs"
 parent = "/parent"
 children = "/children"
+
+# Global Pause Time In Seconds
+PauseTime = 0
 
 #
 # Lambdas
@@ -255,6 +258,9 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	retry_count = 0
 	retry_limit = 2
 
+	# Init these
+	response = payload = None
+
 	# Format :
 	# RDAP-Exit-Code, Rec-Name, Rec-Handle, StartAddr, EndAddr, CIDR, parentHandle, abuse, payload, country
 	result = WhoisResult(404, None, None, None, None, None, None, None, None, None)
@@ -270,8 +276,6 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 			continue
 		except Exception as err:
 			break					# Major bummer
-
-		result.http_result = response.status_code
 
 		if response.status_code == 429 and retry_count < retry_limit:
 			# Rate Limit
@@ -334,7 +338,9 @@ def BuildParser():
 		parser.add_argument("-t",action="store_true",help="Run test function")
 		parser.add_argument("-j",action="store_true",help="Return JSON Response")
 		parser.add_argument("-s",action="store_true",help="Show header for output")
-		parser.add_argument("ip",nargs='?',help="Search event list")
+		parser.add_argument("-p",default=0,help="Add pause in seconds between RDAP calls",required=False)
+		parser.add_argument("-f","--file","--whodey",help="File with list of IP's to lookup",required=False)
+		parser.add_argument("ip",nargs='+',help="Search event list")
 
 # Init Module
 def Initialize():
@@ -364,27 +370,56 @@ def run(arguments=None):
 		DebugMode(True)
 		DbgMsg("Setting to debug mode")
 
+	if args.p != None:
+		PauseTime = int(args.p)
+
 	if args.t:
 		DbgMsg("Calling test stub")
 		test(args)
-	elif args.ip:
+	elif args.ip != None:
 		DbgMsg("Getting IP Info")
 
-		info = GetIPInfo(args.ip)
+		for ip in args.ip:
+			info = GetIPInfo(ip,pause=PauseTime)
 
-		DbgMsg("Checking response\n{}".format(info))
-		if info[0] == 200:
-			DbgMsg("Attempting to output")
+			DbgMsg("Checking response\n{}".format(info))
+			if info[0] == 200:
+				DbgMsg("Attempting to output")
 
-			if args.j and not args.noshow:
-				Msg(json.dumps(info[8],indent=2))
+				if args.j and not args.noshow:
+					Msg(json.dumps(info[8],indent=2))
+				elif not args.noshow:
+					if args.s:
+						Msg(",".join(header[1:-1]))
+
+					Msg(",".join(info[1:-2]))
 			elif not args.noshow:
-				if args.s:
-					Msg(",".join(header[1:-1]))
+				Msg("Bummer, RDAP Failed - {}".format(info[0]))
+	elif args.file != None:
+		DbgMsg("Getting IP Info from file with list of IPs")
 
-				Msg(",".join(info[1:-2]))
-		elif not args.noshow:
-			Msg("Bummer, RDAP Failed - {}".format(info[0]))
+		PauseTime = 1		# Set Pause time to a bare minimum
+
+		ips = list()
+
+		with open(args.file,"rt") as fin:
+			DbgMsg(f"Reading from {args.file}")
+
+			for ip in fin:
+				ips.append(ip.strip())
+
+		DbgMsg("Processed file, getting info")
+		for ip in ips:
+			info = GetIPInfo(ip,pause=PauseTime)
+
+			if info[0] == 200:
+				if args.j and not args.noshow:
+					Msg(json.dumps(info[8],indent=2))
+				elif not args.noshow:
+					if args.s:
+						Msg(",".join(header[1:-1]))
+
+					Msg(",".join(info[1:-2]))
 	elif not args.noshow:
 		Msg("No ip supplied to look up... fool")
 

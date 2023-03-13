@@ -107,5 +107,5 @@ actions:
 	@printf "upgrade\t\tUpgrade the package\n"
 	@printf "actions\t\tThis list\n"
 	@printf "cheatinstall\tDo the cp /usr/lib thing\n"
-	@printf "cheatrm\tClean up cheatinstall code\n"
+	@printf "cheatrm\t\tClean up cheatinstall code\n"
 	@printf "clean\t\tClean build dist\n"

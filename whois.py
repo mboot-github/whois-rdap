@@ -26,7 +26,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,6)
+VERSION=(0,0,7)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -340,7 +340,7 @@ def BuildParser():
 		parser.add_argument("-s",action="store_true",help="Show header for output")
 		parser.add_argument("-p",default=0,help="Add pause in seconds between RDAP calls",required=False)
 		parser.add_argument("-f","--file","--whodey",help="File with list of IP's to lookup",required=False)
-		parser.add_argument("ip",nargs='+',help="Search event list")
+		parser.add_argument("ip",nargs='*',help="IPs to lookup")
 
 # Init Module
 def Initialize():

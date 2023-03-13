@@ -26,7 +26,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,7)
+VERSION=(0,0,8)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -376,7 +376,7 @@ def run(arguments=None):
 	if args.t:
 		DbgMsg("Calling test stub")
 		test(args)
-	elif args.ip != None:
+	elif args.ip != None and args.ip != []:
 		DbgMsg("Getting IP Info")
 
 		for ip in args.ip:

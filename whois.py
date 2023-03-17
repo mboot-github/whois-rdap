@@ -16,7 +16,7 @@ import time
 from collections import namedtuple
 
 import py_helper as ph
-from py_helper import DebugMode, CmdLineMode, ModuleMode, Msg, DbgMsg
+from py_helper import DebugMode, CmdLineMode, ModuleMode, Msg, DbgMsg, ValidIP, IsNetwork
 
 # Init Random
 random.seed()
@@ -26,7 +26,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,8)
+VERSION=(0,0,9)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -264,6 +264,12 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	# Format :
 	# RDAP-Exit-Code, Rec-Name, Rec-Handle, StartAddr, EndAddr, CIDR, parentHandle, abuse, payload, country
 	result = WhoisResult(404, None, None, None, None, None, None, None, None, None)
+
+	if IsNetwork(ipaddr):
+		ipaddr = ipaddr.rsplit("/")[0]
+
+	if not ValidIP(ipaddr):
+		return result
 
 	while retry_count < retry_limit:
 		response = payload = None

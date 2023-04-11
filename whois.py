@@ -238,13 +238,19 @@ def MkUrl(resource,querydata):
 def whois_rdap(url):
 	"""Whois RDAP function"""
 
-	DbgMsg(">>> Entering whois_rdap")
+	DbgMsg("Entering whois_rdap")
 
 	payload = None
+
+	DbgMsg("Executing post...",prefix="XXX")
 	response = requests.post(url=url)
+	DbgMsg("Post returned",prefix="XXX")
 
 	if response and response.status_code == requests.codes.ok:
+		DbgMsg("Post completed successfully",prefix="VVV")
 		payload = response.json()
+	else:
+		DbgMsg(f"Post completed with an error {requests.status_code}",prefix="###")
 
 	return response, payload
 
@@ -253,7 +259,7 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	"""Use WHOIS API to get whois info for the supplied IP Address"""
 	global ip
 
-	DbgMsg(">>> Entering GetIPInfo")
+	DbgMsg("Entering GetIPInfo")
 
 	retry_count = 0
 	retry_limit = 2
@@ -437,7 +443,7 @@ def run(arguments=None):
 
 # Test Function
 def test(args):
-	""" Test stub"""
+	"""Test stub"""
 
 	DebugMode(True)
 	ModuleMode(False)

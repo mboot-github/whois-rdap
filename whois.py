@@ -6,6 +6,8 @@
 
 import os
 import sys
+from datetime import *
+import csv
 import re
 import argparse
 import requests
@@ -26,7 +28,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,10)
+VERSION=(0,0,11)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -71,6 +73,9 @@ children = "/children"
 # Global Pause Time In Seconds
 PauseTime = 0
 
+# Lookup Cache
+LookupCache = None
+
 #
 # Lambdas
 #
@@ -85,8 +90,188 @@ mailcheck = lambda data: re.search(loose_emailaddr_exp,data)
 abusecheck = lambda data: re.search(abuse_exp,data)
 
 #
+# Classes
+#
+
+class CacheEntry:
+	created = None
+	expires = None
+	key = None
+	value = None
+
+	def __init__(self,expires=None,key=None,value=None):
+		"""Init Cache Entry"""
+
+		if expires is not None:
+			self.created = datetime.now()
+			self.expires = datetime.now() + timedelta(seconds=expires)
+
+		self.key = key
+		self.value = value
+
+	def read(self,reader):
+		"""Read Cache Entry from Input"""
+
+		row = reader.read()
+
+		self.expires = datetime.fromtimestamp(float(row[1]))
+
+		if self.expires > datetime.now():
+			# finish reading
+			self.created = datetime.fromtimestamp(float(row[0]))
+			self.key = row[2]
+			self.value = row[3]
+
+	def write(self,writer):
+		"""Write Cache Entry to Output"""
+
+		if self.expires > datetime.now():
+			row = [ self.created.timestamp(), self.expires.timestamp(), self.key, self.value ]
+
+			writer.writerow(row)
+
+class Cache:
+	lookup = None
+	items = None
+	write_through = False
+	backing_store = None
+	default_ttl = 30
+
+	def __init__(self,backingstore=None,writethrough=False,ttl=30):
+		"""Initialize Instance of Cache"""
+
+		self.items = list()
+		self.lookup = dict()
+
+		self.backing_store = backingstore
+		self.write_through = writethrough
+		if ttl is not None:
+			self.default_ttl = ttl
+
+	def Exists(self,key):
+		"""Check if Key Exists In Cache"""
+
+		result = None
+
+		if key in self.lookup:
+			result = self.lookup[key]
+
+		return result
+
+	def Save(self):
+		"""Save Cache to Backing Store"""
+
+		with open(self.backing_store,"w",newline='') as csvfile:
+			writer = csv.writer(csvfile)
+
+			for entry in self.items:
+				entry.write(writer)
+
+	def Load(self):
+		"""Load Cache From Backing Store"""
+
+		with open(self.backing_store,"r",newline='') as csvfile:
+			reader = csv.reader(csvfile)
+
+			entry = CacheEntry()
+
+			entry.read(csvfile)
+
+			self.lookup[key] = entry
+			self.items.append(entry)
+
+	def Append(self,item):
+		"""Append new Cache Item To Backing Store"""
+
+		with open(self.backing_store,"a",newline='') as csvfile:
+			writer = csv.writer(csvfile)
+
+			item.write(writer)
+
+	def Change(self,key,value,expires=None):
+		"""Change A Cache Item"""
+
+		entry = self.lookup[key]
+
+		if expires is None:
+			expires = self.default_ttl
+
+		if entry is not None:
+			entry.value = value
+			entry.expires = datetime.now() + timedelta(seconds=expires)
+
+			if self.write_through and self.backing_store is not None:
+				Save()
+
+	def Add(self,key,value,expires=None):
+		"""Add Item To Cache"""
+
+		if expires is None:
+			expires = self.default_ttl
+
+		if not key in self.lookup:
+			entry = CacheEntry(expires,key,value)
+
+			self.lookup[key] = entry
+			self.items.append(entry)
+
+			if self.write_through and self.backing_store is not None:
+				self.Append(entry)
+		else:
+			entry = self.lookup[key]
+
+			if value != entry.value:
+				self.Change(key,value)
+
+	def Remove(self,key,writethrough=True):
+		"""Clear Cache Entry"""
+
+		if key in self.lookup:
+			entry = self.lookup[key]
+
+			del self.lookup[key]
+
+			self.items.remove(entry)
+
+			if writethrough and self.write_through and self.backing_store is not None:
+				Save()
+
+	def Clear(self):
+		"""Clear Cache"""
+
+		self.lookup.clear()
+		self.items.clear()
+
+		if self.backing_store is not None and os.path.exists(self.backing_store):
+			os.remove(self.backing_store)
+
+	def Expire(self):
+		"""Expire Elligible Items In Cache"""
+
+		elligible = list()
+
+		for item in self.items:
+			if item.expires > datetime.now():
+				continue
+			else:
+				elligible.append(entry.key)
+
+		for item in elligible:
+			self.Remove(item,writethrough=False)
+
+		if self.write_through and self.backing_store is not None:
+			self.Save()
+
+#
 # Support Functions
 #
+
+def EnableCache(cachefilename,writethrough,ttl):
+	"""Enable Lookup Cache"""
+
+	global LookupCache
+
+	LookupCache = Cache(cachefilename,writethrough,ttl)
 
 # Get Network Block Specifics
 def BreakdownNetwork(start,end):
@@ -257,7 +442,7 @@ def whois_rdap(url):
 # Get IP Info
 def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	"""Use WHOIS API to get whois info for the supplied IP Address"""
-	global ip
+	global ip, LookupCache
 
 	DbgMsg("Entering GetIPInfo")
 
@@ -276,6 +461,15 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 
 	if not ValidIP(ipaddr):
 		return result
+
+	if LookupCache is not None:
+		entry = LookupCache.Exists(ipaddr)
+
+		if entry is not None:
+			fields = entry.value.split("|")
+			result = WhoisResult(200,fields[0],fields[1],fields[2],fields[3],fields[4],fields[5],fields[6],dict(),fields[8])
+
+			return result
 
 	while retry_count < retry_limit:
 		response = payload = None
@@ -327,6 +521,11 @@ def GetIPInfo(ipaddr,retry_in=10,pause=0):
 		result = WhoisResult(response.status_code,name,handle,startAddress,endAddress,cidr,parentHandle,abuse,payload,country)
 		# result = [ response.status_code, name, handle, startAddress, endAddress, cidr, parentHandle, abuse, payload, country ]
 
+		if LookupCache is not None and response.status_code == 200:
+			value = f"{name}|{handle}|{startAddress}|{endAddress}|{cidr}|{parentHandle}|{abuse}||{country}"
+			LookupCache.Add(ipaddr,value)
+			LookupCache.Expire()
+
 	if pause > 0:
 		time.sleep(pause)
 
@@ -352,6 +551,8 @@ def BuildParser():
 		parser.add_argument("-s",action="store_true",help="Show header for output")
 		parser.add_argument("-p",default=0,help="Add pause in seconds between RDAP calls",required=False)
 		parser.add_argument("-f","--file","--whodey",help="File with list of IP's to lookup",required=False)
+		parser.add_argument("-c","--cache",help="Lookup Cache file",required=False)
+		parser.add_argument("-e","--expires",help="Time in seconds for cache expiration",required=False)
 		parser.add_argument("ip",nargs='*',help="IPs to lookup")
 
 # Init Module
@@ -381,6 +582,14 @@ def run(arguments=None):
 	if args.debug:
 		DebugMode(True)
 		DbgMsg("Setting to debug mode")
+
+	if args.cache is not None:
+		expires = 3600
+
+		if args.expires is not None:
+			expires = int(args.expires)
+
+		EnableCache(args.cache,True,expires)
 
 	if args.p != None:
 		PauseTime = int(args.p)

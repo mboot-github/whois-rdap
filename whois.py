@@ -28,7 +28,7 @@ random.seed()
 #
 
 # Version
-VERSION=(0,0,11)
+VERSION=(0,0,12)
 Version = __version__ = ".".join([ str(x) for x in VERSION ])
 
 # Parser
@@ -443,8 +443,6 @@ def whois_rdap(url):
 def GetIPInfo(ipaddr,retry_in=10,pause=0):
 	"""Use WHOIS API to get whois info for the supplied IP Address"""
 	global ip, LookupCache
-
-	DbgMsg("Entering GetIPInfo")
 
 	retry_count = 0
 	retry_limit = 2

@@ -2,7 +2,7 @@ PACKAGE=whois-rdap
 EPACKAGE=whois_rdap
 CODE=whois.py
 SRC=$(CODE)
-PYTHONTARGET=python3.8
+PYTHONTARGET=python3.9
 CHEATTARGET=/usr/lib/$(PYTHONTARGET)
 VENV=tests
 PLATFORM=linux
@@ -15,7 +15,11 @@ RECFILE=requirements.txt
 	@python3 -m pip install --upgrade twine
 	@touch .prereqs
 
-prereqs: .prereqs
+prereqs: .prereqs reformat
+
+reformat:
+	black *.py
+	pylama *.py
 
 build: .prereqs
 	@python3 -m build

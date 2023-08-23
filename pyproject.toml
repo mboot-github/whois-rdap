@@ -4,3 +4,6 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.pylama]
+    max_line_length = 160
